@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"compress/zlib"
 	"crypto/sha1"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"os"
@@ -32,6 +33,17 @@ func main() {
 			os.Exit(1)
 		}
 		hashObjectCommand(os.Args[3])
+	case "ls-tree":
+		if len(os.Args) < 4 || os.Args[2] != "--name-only" {
+			fmt.Fprintf(os.Stderr, "usage: mygit ls-tree --name-only <tree_sha>\n")
+			os.Exit(1)
+		}
+		treeSHA := os.Args[3]
+		err := lsTree(treeSHA)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+			os.Exit(1)
+		}
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown command %s\n", command)
 		os.Exit(1)
@@ -145,4 +157,71 @@ func hashObjectCommand(filePath string) {
 
 	// Print the hash
 	fmt.Println(hashStr)
+}
+
+func lsTree(treeSHA string) error {
+	// Convert SHA-1 hash to file path
+	objectPath := filepath.Join(".git", "objects", treeSHA[:2], treeSHA[2:])
+	file, err := os.Open(objectPath)
+	if err != nil {
+		return fmt.Errorf("could not open object file: %w", err)
+	}
+	defer file.Close()
+
+	// Decompress the file using zlib
+	zlibReader, err := zlib.NewReader(file)
+	if err != nil {
+		return fmt.Errorf("could not decompress object file: %w", err)
+	}
+	defer zlibReader.Close()
+
+	// Read the decompressed data
+	var buffer bytes.Buffer
+	if _, err := io.Copy(&buffer, zlibReader); err != nil {
+		return fmt.Errorf("could not read decompressed data: %w", err)
+	}
+	data := buffer.Bytes()
+
+	// Verify tree object header
+	if !bytes.HasPrefix(data, []byte("tree ")) {
+		return fmt.Errorf("object is not a tree")
+	}
+	data = data[bytes.IndexByte(data, 0)+1:] // Skip header
+
+	// Parse tree entries
+	for len(data) > 0 {
+		// Extract mode
+		modeEnd := bytes.IndexByte(data, ' ')
+		if modeEnd == -1 {
+			return fmt.Errorf("invalid tree object format")
+		}
+		mode := string(data[:modeEnd])
+		data = data[modeEnd+1:]
+
+		// Extract name
+		nameEnd := bytes.IndexByte(data, 0)
+		if nameEnd == -1 {
+			return fmt.Errorf("invalid tree object format")
+		}
+		name := string(data[:nameEnd])
+		data = data[nameEnd+1:]
+
+		// Extract SHA-1 hash
+		if len(data) < 20 {
+			return fmt.Errorf("invalid tree object format")
+		}
+		sha := data[:20]
+		data = data[20:]
+
+		// Print the name (for --name-only flag)
+		fmt.Println(name)
+
+		// Convert sha to hex (if needed for other purposes)
+		shaHex := hex.EncodeToString(sha)
+
+		// Debug output (optional)
+		fmt.Printf("Mode: %s, Name: %s, SHA: %s\n", mode, name, shaHex)
+	}
+
+	return nil
 }
