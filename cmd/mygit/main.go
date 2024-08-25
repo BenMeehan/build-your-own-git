@@ -308,7 +308,10 @@ func writeTree(path string) ([]byte, error) {
 
 	content := []byte{}
 	for _, entry := range treeEntries {
-		content = append(content, []byte(fmt.Sprintf("%s %s\x00", entry.mode, entry.name))...)
+		content = append(content, []byte(entry.mode)...)
+		content = append(content, ' ')
+		content = append(content, []byte(entry.name)...)
+		content = append(content, '\000')
 		content = append(content, entry.hash...)
 	}
 
