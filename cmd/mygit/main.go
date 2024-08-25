@@ -319,7 +319,7 @@ func writeTree(path string) ([]byte, error) {
 }
 
 func hashObject(writeObject bool, objectType string, size int, content []byte) []byte {
-	header := fmt.Sprintf("%s %d\x00", objectType, size)
+	header := fmt.Sprintf("%s %d\000", objectType, size)
 	fullContent := append([]byte(header), content...)
 
 	h := sha1.New()
