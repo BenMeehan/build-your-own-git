@@ -302,8 +302,17 @@ func createTreeObject(entries []treeEntry) ([]byte, error) {
 		entryStr := fmt.Sprintf("%s %s\x00%s", entry.mode, entry.name, entry.sha)
 		buffer.WriteString(entryStr)
 	}
+
+	// Debug: Print raw tree entries
+	fmt.Printf("Raw tree entries: %x\n", buffer.Bytes())
+
 	treeHeader := fmt.Sprintf("tree %d\x00", buffer.Len())
-	return append([]byte(treeHeader), buffer.Bytes()...), nil
+	treeObject := append([]byte(treeHeader), buffer.Bytes()...)
+
+	// Debug: Print the final tree object before compression
+	fmt.Printf("Tree object (header + entries): %x\n", treeObject)
+
+	return treeObject, nil
 }
 
 func getBlobSHA(path string) string {
