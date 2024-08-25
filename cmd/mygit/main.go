@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"time"
 )
 
 // Usage: your_program.sh <command> <arg1> <arg2> ...
@@ -57,6 +58,8 @@ func main() {
 		} else {
 			fmt.Printf("%x\n", hash)
 		}
+	case "commit-tree":
+		commitTreeCommand()
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown command %s\n", command)
 		os.Exit(1)
@@ -357,4 +360,48 @@ type treeEntry struct {
 	mode string
 	name string
 	hash []byte
+}
+
+func commitTreeCommand() {
+	if len(os.Args) < 5 || os.Args[2] != "-m" {
+		fmt.Fprintf(os.Stderr, "usage: mygit commit-tree <tree_sha> -p <parent_sha> -m <message>\n")
+		os.Exit(1)
+	}
+
+	treeSHA := os.Args[1]
+	parentSHA := os.Args[3]
+	message := os.Args[4]
+
+	commitHash, err := createCommit(treeSHA, parentSHA, message)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error creating commit: %s\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Println(commitHash)
+}
+
+func createCommit(treeSHA, parentSHA, message string) (string, error) {
+	// Define author and committer (hardcoded for simplicity)
+	authorName := "Your Name"
+	authorEmail := "your.email@example.com"
+	committerName := "Your Name"
+	committerEmail := "your.email@example.com"
+
+	// Get current timestamp in UNIX format
+	timestamp := fmt.Sprintf("%d", time.Now().Unix())
+
+	// Build the commit content
+	var commitContent bytes.Buffer
+	commitContent.WriteString(fmt.Sprintf("tree %s\n", treeSHA))
+	commitContent.WriteString(fmt.Sprintf("parent %s\n", parentSHA))
+	commitContent.WriteString(fmt.Sprintf("author %s <%s> %s +0000\n", authorName, authorEmail, timestamp))
+	commitContent.WriteString(fmt.Sprintf("committer %s <%s> %s +0000\n", committerName, committerEmail, timestamp))
+	commitContent.WriteString("\n")
+	commitContent.WriteString(message)
+	commitContent.WriteString("\n")
+
+	// Compute the SHA-1 hash of the commit content
+	hash := hashObject(true, "commit", commitContent.Len(), commitContent.Bytes())
+	return fmt.Sprintf("%x", hash), nil
 }
