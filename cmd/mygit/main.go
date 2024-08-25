@@ -324,8 +324,8 @@ func hashObject(writeObject bool, objectType string, size int, content []byte) [
 	hash := h.Sum(nil)
 
 	if writeObject {
-		objectDir := filepath.Join(".git", "objects", fmt.Sprintf("%02x", hash[0]))
-		objectFile := filepath.Join(objectDir, fmt.Sprintf("%x", hash[1:]))
+		objectDir := filepath.Join(".git", "objects", fmt.Sprintf("%02x", hash[0:2]))
+		objectFile := filepath.Join(objectDir, fmt.Sprintf("%x", hash[2:]))
 
 		if err := os.MkdirAll(objectDir, 0755); err != nil {
 			fmt.Fprintf(os.Stderr, "Error creating object directory: %s\n", err)
