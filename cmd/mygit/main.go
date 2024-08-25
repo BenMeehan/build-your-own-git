@@ -46,12 +46,12 @@ func main() {
 			os.Exit(1)
 		}
 	case "write-tree":
-		if len(os.Args) < 3 {
-			fmt.Fprintf(os.Stderr, "usage: mygit write-tree <path>\n")
+		if len(os.Args) < 2 {
+			fmt.Fprintf(os.Stderr, "usage: mygit write-tree\n")
 			os.Exit(1)
 		}
-		treePath := os.Args[2]
-		if hash, err := writeTree(treePath); err != nil {
+		cwd, _ := os.Getwd()
+		if hash, err := writeTree(cwd); err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %s\n", err)
 			os.Exit(1)
 		} else {
