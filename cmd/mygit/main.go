@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"compress/zlib"
 	"crypto/sha1"
-	"encoding/hex"
 	"fmt"
 	"io"
 	"os"
@@ -195,7 +194,7 @@ func lsTree(treeSHA string) error {
 		if modeEnd == -1 {
 			return fmt.Errorf("invalid tree object format")
 		}
-		mode := string(data[:modeEnd])
+		// mode := string(data[:modeEnd])
 		data = data[modeEnd+1:]
 
 		// Extract name
@@ -210,17 +209,17 @@ func lsTree(treeSHA string) error {
 		if len(data) < 20 {
 			return fmt.Errorf("invalid tree object format")
 		}
-		sha := data[:20]
+		// sha := data[:20]
 		data = data[20:]
 
 		// Print the name (for --name-only flag)
 		fmt.Println(name)
 
 		// Convert sha to hex (if needed for other purposes)
-		shaHex := hex.EncodeToString(sha)
+		// shaHex := hex.EncodeToString(sha)
 
-		// Debug output (optional)
-		fmt.Printf("Mode: %s, Name: %s, SHA: %s\n", mode, name, shaHex)
+		// Debug output 
+		// fmt.Printf("Mode: %s, Name: %s, SHA: %s\n", mode, name, shaHex)
 	}
 
 	return nil
