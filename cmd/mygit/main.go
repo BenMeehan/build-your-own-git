@@ -242,11 +242,11 @@ func writeTree() error {
 		return err
 	}
 
-	treeSHA := sha1.New()
-	treeSHA.Write(treeObject)
-	hash := fmt.Sprintf("%x", treeSHA.Sum(nil))
+	hash := sha1.New()
+	hash.Write(treeObject)
+	treeSHA := fmt.Sprintf("%x", hash.Sum(nil))
 
-	objectPath := filepath.Join(".git", "objects", hash[:2], hash[2:])
+	objectPath := filepath.Join(".git", "objects", treeSHA[:2], treeSHA[2:])
 	if err := os.MkdirAll(filepath.Dir(objectPath), 0755); err != nil {
 		return err
 	}
@@ -254,7 +254,7 @@ func writeTree() error {
 		return err
 	}
 
-	fmt.Println(hash)
+	fmt.Println(treeSHA)
 	return nil
 }
 
@@ -264,6 +264,10 @@ func getTreeEntries(dir string) ([]treeEntry, error) {
 	err := filepath.WalkDir(dir, func(path string, info fs.DirEntry, err error) error {
 		if err != nil {
 			return err
+		}
+
+		if path == ".git" || path == ".git/objects" || path == ".git/refs" {
+			return nil
 		}
 
 		relPath, _ := filepath.Rel(dir, path)
@@ -302,17 +306,8 @@ func createTreeObject(entries []treeEntry) ([]byte, error) {
 		entryStr := fmt.Sprintf("%s %s\x00%s", entry.mode, entry.name, entry.sha)
 		buffer.WriteString(entryStr)
 	}
-
-	// Debug: Print raw tree entries
-	fmt.Printf("Raw tree entries: %x\n", buffer.Bytes())
-
 	treeHeader := fmt.Sprintf("tree %d\x00", buffer.Len())
-	treeObject := append([]byte(treeHeader), buffer.Bytes()...)
-
-	// Debug: Print the final tree object before compression
-	fmt.Printf("Tree object (header + entries): %x\n", treeObject)
-
-	return treeObject, nil
+	return append([]byte(treeHeader), buffer.Bytes()...), nil
 }
 
 func getBlobSHA(path string) string {
